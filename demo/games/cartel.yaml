@@ -1,0 +1,166 @@
+# ============================================================================
+# cartel.yaml — the whole Cartel game, authored in YAML.
+#
+# Four producers in two cartels sell the same product into one market. The file
+# below is the complete game: the seats and teams, the market economy (as named
+# state and derived formulas), the move each producer makes every round, how the
+# round resolves, the win condition, and every sentence a player reads.
+# `parseGame` compiles it into a runnable game; RULES.md is the guide.
+# ============================================================================
+
+id: cartel
+name: Cartel
+description: >
+  Two cartels of two producers sell the same product into one market. Flood
+  it for quick cash and the price drops — and your own cheapened goods sell
+  below everyone else's for a while. Hold back together and the price climbs.
+  Nobody knows exactly which round is the last. End the game richer than the
+  rival cartel.
+
+# Four seats, in two teams. Seats are numbered from 1 as a reader would count.
+seats: 4
+teams:
+  - { name: Northern Syndicate, seats: [1, 2] }
+  - { name: Southern Combine, seats: [3, 4] }
+
+# The "rounds" knob sets the LONGEST the match can run; the true final round is
+# drawn in secret when the match starts (see "end window" below).
+rounds: { default: 10, min: 2, max: 30, label: "Rounds (at most)" }
+
+# --- The economy -------------------------------------------------------------
+constants:
+  starting cash: 100     # each producer starts with this much
+  base price: 10         # market price per unit at the start
+  unit cost: 6           # producing one unit costs this much
+  flood units: 10        # units sold on FLOOD
+  withhold units: 3      # units sold on WITHHOLD
+  flood drop: 2          # how far each FLOOD drags the price down after a round
+  withhold rise: 1       # how far each WITHHOLD nudges it up
+  # Flooding cheapens your OWN brand: for a while after you dump, your goods
+  # sell at a discount below the market price. These two numbers describe that
+  # self-inflicted discount ("markdown").
+  flood markdown: 3      # per unit, how far below the market price your OWN
+                         # goods sell for EACH flood you played recently —
+                         # repeated floods stack, deepening the discount
+  markdown window: 3     # how long a flood keeps marking you down: it applies
+                         # for this many of the following rounds
+  end window: 4          # the match secretly ends after any of its last
+                         # this-many rounds, each equally likely
+
+# Persistent numbers. `price` is one market price; `cash` is kept per producer.
+state:
+  price: base price
+  cash: { per seat: starting cash }
+
+# Values recomputed from the state on demand, usable anywhere below.
+derive:
+  # This seat's markdown — the per-unit discount its own goods currently suffer
+  # for having flooded: {flood markdown} for each FLOOD it played in the last
+  # {markdown window} completed rounds. Repeated floods stack, deepening it.
+  markdown: { per seat: "flood markdown * recent(move, flood, markdown window)" }
+  # What one of THIS seat's units sells for: the price minus the markdown.
+  your price: { per seat: "max(0, price - markdown)" }
+  profit: { per seat: "units * your price - units * unit cost" }
+  # How many FLOODs this seat has played across the whole match.
+  floods: { per seat: "recent(move, flood)" }
+
+# --- A round: the move -------------------------------------------------------
+phases:
+  # All four producers pick their move at once, nobody seeing anyone else's
+  # choice, and the round resolves together.
+  - phase: move
+    by: everyone
+    ask: "Round {round}. Your units sell for {your price} this round. Do you flood or withhold?"
+    choices:
+      - id: flood
+        label: FLOOD
+        units: 10
+        past: flooded
+        note: "sell {flood units} units now; the price drops {flood drop} after the round and your own goods sell {flood markdown} below the market price for the next {markdown window} rounds (repeated floods stack)"
+      - id: withhold
+        label: WITHHOLD
+        units: 3
+        past: withheld
+        note: "sell only {withhold units} units and let the price rise {withhold rise} after the round"
+    resolve:
+      # Everyone sells at their own price and banks the profit; then the whole
+      # round's moves are reported on ONE line — {player} {units} @ {your price}
+      # ({+profit}) per seat — so identical outcomes don't repeat four times.
+      - each seat:
+          - "cash += units * your price - units * unit cost"
+      - say: "Moves — {list}."
+        list: { each: "{player} {move.past} {units} @ {your price} ({+profit})", join: ", " }
+      # The price moves: each FLOOD drags it down, each WITHHOLD nudges it up.
+      # No ceiling — sustained restraint keeps the price climbing; it can't fall below 0.
+      - "price = max(0, price + tally(withhold) * withhold rise - tally(flood) * flood drop)"
+      # A fresh FLOOD deepens that seat's markdown for the rounds to come.
+      - each seat:
+          - when: { move: flood }
+            say: "{player}'s goods are marked down {flood markdown * (1 + recent(move, flood, markdown window - 1))} below the market price from next round."
+      - say: "Round {round} ends. {team 1 name}: {team 1 cash}. {team 2 name}: {team 2 cash}. The price moves to {price}."
+
+# --- Who wins ----------------------------------------------------------------
+outcome:
+  score: cash          # add each producer's cash…
+  per: team            # …up per cartel; the richer cartel wins.
+  win: highest
+  verdict: "{winning team} finish richer, {winning cash} to {losing cash}."
+  draw: "Dead heat: both cartels finish with {cash}."
+
+# --- The standing rules given to every LLM player ----------------------------
+# {options} is built from the move choices.
+rules: >
+  You are {player}, a producer in the {your team} cartel; your teammate is
+  {teammate}. The rival cartel, {their team}, is {rival 1} and {rival 2}.
+  All four of you manufacture the same product and sell into one market.
+
+  The match lasts at most {rounds} rounds, but the exact final round is
+  secret: any of the last {end window} rounds may turn out to be the last,
+  each equally likely, and nobody is warned. Never bank on a next round —
+  or on there being a known last one to exploit.
+
+  Your goal: finish with more combined cash than the rival cartel. Your
+  teammate's money counts with yours, so play for the team.
+
+  Each round, all four producers pick their move at the same time, nobody
+  seeing anyone else's choice: {options}.
+
+  Everyone sells at this round's market price — minus your own markdown if
+  your goods are marked down — and pays {unit cost} per unit to produce.
+  After the round the price moves: each FLOOD drags it down {flood drop}
+  and each WITHHOLD nudges it up {withhold rise}. There is no ceiling —
+  sustained restraint keeps the price climbing — but it never falls below 0.
+
+  Flooding cheapens your own brand: for each FLOOD you played in the last
+  {markdown window} rounds, every unit you sell is marked down {flood markdown}
+  below the market price. The markdowns stack — dump round after round and
+  your goods sell at a deepening discount while your rivals still get the
+  full price. Everyone can see everyone's current markdown.
+
+# --- What a player sees when deciding -----------------------------------------
+# Ordered lines; a line with "when" only shows when that holds. A "list" builds
+# {list} by rendering "each" for every seat (optionally filtered by "where").
+observation:
+  - line: "Cash — you: {cash}; {teammate} (teammate): {teammate cash}; your cartel: {your team cash}. Rivals — {rival 1}: {rival 1 cash}; {rival 2}: {rival 2 cash}; their cartel: {rival team cash}."
+  - line: "The market price is {price}; your units sell for {your price} this round."
+  - when: "any seat: markdown > 0"
+    line: "Marked down for recent flooding: {list}."
+    list: { where: "markdown > 0", each: "{player} sells {markdown} below market", join: ", " }
+  - when: "any seat: floods > 0"
+    line: "Floods so far — {list}."
+    list: { each: "{player} {floods}", join: ", " }
+  - when: "round > 1"
+    line: "Last round: {list}."
+    list: { each: "{player} {last(move).past}", join: ", " }
+
+# --- Match header, transcript tags, and the history table --------------------
+view:
+  status: "round {round} — price {price}"
+  # Spotlighted large above the match so the market price — which drives every
+  # move — is impossible to miss.
+  headline: { label: "Unit price", value: "{price}" }
+  turn tag: "R{round}"
+  score: cash
+  table:
+    columns: ["Price", "{team 1 name}", "{team 2 name}"]
+    cells: ["{price}", "{team 1 cash}", "{team 2 cash}"]

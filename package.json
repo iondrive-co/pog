@@ -1,0 +1,57 @@
+{
+  "name": "pog",
+  "version": "0.2.0",
+  "description": "A DSL + engine + React components for running turn-based, choice-driven text games between humans and LLMs (including models running entirely in the browser via WebLLM).",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./worker": {
+      "types": "./dist/webllm/worker.d.ts",
+      "import": "./dist/webllm/worker.js"
+    },
+    "./styles.css": "./dist/styles.css"
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "sideEffects": [
+    "**/*.css",
+    "./dist/webllm/worker.js"
+  ],
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "dev:https": "POG_HTTPS=1 node scripts/dev.mjs",
+    "stop": "node scripts/stop.mjs",
+    "check": "tsc --noEmit",
+    "build": "npm run check && tsc -p tsconfig.lib.json && cp src/styles.css dist/styles.css",
+    "pretest": "npm run build",
+    "test": "node --test test/*.test.mjs",
+    "prepack": "npm run build",
+    "demo:build": "npm run check && vite build",
+    "preview": "vite preview"
+  },
+  "peerDependencies": {
+    "react": "^18.0.0 || ^19.0.0",
+    "react-dom": "^18.0.0 || ^19.0.0"
+  },
+  "dependencies": {
+    "@mlc-ai/web-llm": "^0.2.79",
+    "yaml": "^2.9.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-basic-ssl": "^2.3.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "typescript": "^5.6.3",
+    "vite": "^6.0.7"
+  }
+}

@@ -1,0 +1,536 @@
+:root {
+  --bg: #0f1117;
+  --bg-card: #171a23;
+  --bg-inset: #1f2330;
+  --border: #2a2f40;
+  --text: #e6e8ef;
+  --text-muted: #9aa0b4;
+  --accent: #6c8cff;
+  --accent-hover: #85a0ff;
+  --ok: #3ecf8e;
+  --warn: #ffb454;
+  --err: #ff6b6b;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  line-height: 1.5;
+}
+
+.app {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px 16px 48px;
+}
+
+header h1 {
+  margin: 0;
+  font-size: 1.9rem;
+  letter-spacing: -0.02em;
+}
+
+.tagline {
+  margin: 4px 0 20px;
+  color: var(--text-muted);
+}
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px 20px;
+  margin-bottom: 18px;
+}
+
+.card-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.card-title h2 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.chip {
+  font-size: 0.75rem;
+  padding: 3px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.chip-ok {
+  background: rgba(62, 207, 142, 0.15);
+  color: var(--ok);
+}
+
+/* The model panel's bill: the distinct models the seat line-up needs. */
+.model-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  flex: 1;
+}
+
+.model-list li {
+  padding: 2px 0;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 8px 0;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+input,
+select,
+textarea {
+  background: var(--bg-inset);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 0.9rem;
+  font-family: inherit;
+}
+
+input[type="number"] {
+  width: 90px;
+}
+
+input[type="range"] {
+  padding: 0;
+}
+
+textarea {
+  min-width: 260px;
+  resize: vertical;
+}
+
+button {
+  background: var(--bg-inset);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 0.9rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+button:hover:not(:disabled) {
+  background: var(--border);
+}
+
+button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
+
+button.primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+button.big {
+  padding: 10px 26px;
+  font-size: 1rem;
+}
+
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+button.stop {
+  margin-left: 10px;
+  border-color: var(--err);
+  color: var(--err);
+}
+
+/* Choice-button tooltips. The native title bubble is unreliable (long delay,
+   skipped after a click, hidden when the window lacks focus), so the note is
+   rendered as a CSS bubble that appears instantly on hover or keyboard focus. */
+[data-tip] {
+  position: relative;
+}
+
+[data-tip]::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: min(340px, 78vw);
+  background: var(--bg-inset);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 0.8rem;
+  font-weight: 400;
+  line-height: 1.45;
+  text-align: left;
+  white-space: normal;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.12s;
+  pointer-events: none;
+  z-index: 10;
+}
+
+[data-tip]:hover::after,
+[data-tip]:focus-visible::after {
+  opacity: 1;
+  visibility: visible;
+}
+
+.muted {
+  color: var(--text-muted);
+}
+
+.small {
+  font-size: 0.82rem;
+}
+
+/* A seat card's description authored as one buff/debuff per line: keep the
+   authored line breaks instead of collapsing them into a paragraph. */
+.seat-traits {
+  white-space: pre-line;
+  line-height: 1.5;
+}
+
+.warning {
+  background: rgba(255, 180, 84, 0.1);
+  border: 1px solid rgba(255, 180, 84, 0.4);
+  color: var(--warn);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 0.88rem;
+}
+
+.progress-wrap {
+  margin-top: 10px;
+}
+
+.progress-bar {
+  height: 8px;
+  background: var(--bg-inset);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.2s;
+}
+
+.payoff-table,
+.history-table {
+  border-collapse: collapse;
+  margin: 10px 0;
+  font-size: 0.85rem;
+}
+
+.payoff-table th,
+.payoff-table td,
+.history-table th,
+.history-table td {
+  border: 1px solid var(--border);
+  padding: 6px 12px;
+  text-align: center;
+}
+
+.payoff-table th,
+.history-table th {
+  background: var(--bg-inset);
+  font-weight: 600;
+}
+
+/* The per-seat stats table (view.seats) doubles as the scoreboard. */
+.seat-stats {
+  width: 100%;
+}
+
+.seat-stats td:first-child {
+  text-align: left;
+  font-weight: 600;
+}
+
+.players-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin: 14px 0;
+}
+
+@media (max-width: 720px) {
+  .players-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.player-editor {
+  background: var(--bg-inset);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.player-editor h3 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.match-grid {
+  display: grid;
+  grid-template-columns: 3fr 2fr;
+  gap: 18px;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .match-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.headline {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 12px;
+  margin: 12px 0;
+  padding: 12px 18px;
+  background: rgba(108, 140, 255, 0.12);
+  border: 1px solid rgba(108, 140, 255, 0.45);
+  border-radius: 10px;
+}
+
+.headline-label {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.headline-value {
+  font-size: 2.2rem;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--accent-hover);
+  font-variant-numeric: tabular-nums;
+}
+
+.scoreboard {
+  display: flex;
+  gap: 14px;
+  margin: 12px 0;
+}
+
+.score {
+  flex: 1;
+  background: var(--bg-inset);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+}
+
+.score-name {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.score-value {
+  font-size: 1.6rem;
+  font-weight: 700;
+}
+
+.action-row {
+  background: var(--bg-inset);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin: 12px 0;
+}
+
+.action-row p {
+  margin: 0 0 8px;
+}
+
+/* Multi-axis decisions: one radio group per axis, committed together. */
+.axis-group {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 4px 14px 10px;
+  margin: 0 0 10px;
+}
+
+.axis-group legend {
+  padding: 0 6px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+/* Override the stacked-label default: radio and caption sit inline. */
+.axis-option {
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9rem;
+  color: var(--text);
+  font-weight: 600;
+  cursor: pointer;
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  transition: background 0.15s;
+}
+
+.axis-option:hover {
+  background: var(--border);
+}
+
+.axis-option input {
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.axis-option:has(input:checked) {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+.axis-option.disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.axis-option.disabled input {
+  cursor: not-allowed;
+}
+
+.thinking {
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  display: inline-block;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.final {
+  font-size: 1.05rem;
+  font-weight: 600;
+  background: rgba(108, 140, 255, 0.1);
+  border: 1px solid rgba(108, 140, 255, 0.4);
+  border-radius: 10px;
+  padding: 12px 16px;
+}
+
+.transcript {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px 18px;
+  position: sticky;
+  top: 16px;
+}
+
+.transcript h3 {
+  margin: 0 0 10px;
+  font-size: 1rem;
+}
+
+.transcript-scroll {
+  max-height: 65vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.transcript-entry {
+  background: var(--bg-inset);
+  border-left: 3px solid var(--accent);
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 0.85rem;
+}
+
+.transcript-entry p {
+  margin: 2px 0 0;
+  white-space: pre-wrap;
+}
+
+.transcript-info {
+  border-left-color: var(--ok);
+}
+
+.transcript-error {
+  border-left-color: var(--err);
+}
+
+.transcript-meta {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+footer {
+  margin-top: 24px;
+  text-align: center;
+}
+
+a {
+  color: var(--accent);
+}

@@ -1,0 +1,64 @@
+seats: min=4 max=4 roleNames=["Northern Syndicate","Northern Syndicate","Southern Combine","Southern Combine"] names=undefined descriptions=undefined
+[R1] round 1 — price 10
+  Moves — Alice flooded 10 @ 10 (+40), Bob withheld 3 @ 10 (+12), Carol flooded 10 @ 10 (+40), Dave withheld 3 @ 10 (+12).
+  Alice's goods are marked down 3 below the market price from next round.
+  Carol's goods are marked down 3 below the market price from next round.
+  Round 1 ends. Northern Syndicate: 252. Southern Combine: 252. The price moves to 8.
+[R2] round 2 — price 8
+  Moves — Alice flooded 10 @ 5 (-10), Bob withheld 3 @ 8 (+6), Carol flooded 10 @ 5 (-10), Dave withheld 3 @ 8 (+6).
+  Alice's goods are marked down 6 below the market price from next round.
+  Carol's goods are marked down 6 below the market price from next round.
+  Round 2 ends. Northern Syndicate: 248. Southern Combine: 248. The price moves to 6.
+[R3] round 3 — price 6
+  Moves — Alice flooded 10 @ 0 (-60), Bob withheld 3 @ 6 (+0), Carol flooded 10 @ 0 (-60), Dave withheld 3 @ 6 (+0).
+  Alice's goods are marked down 9 below the market price from next round.
+  Carol's goods are marked down 9 below the market price from next round.
+  Round 3 ends. Northern Syndicate: 188. Southern Combine: 188. The price moves to 4.
+[R4] round 4 — price 4
+  Moves — Alice flooded 10 @ 0 (-60), Bob withheld 3 @ 4 (-6), Carol flooded 10 @ 0 (-60), Dave withheld 3 @ 4 (-6).
+  Alice's goods are marked down 9 below the market price from next round.
+  Carol's goods are marked down 9 below the market price from next round.
+  Round 4 ends. Northern Syndicate: 122. Southern Combine: 122. The price moves to 2.
+[R5] round 5 — price 2
+  Moves — Alice flooded 10 @ 0 (-60), Bob withheld 3 @ 2 (-12), Carol flooded 10 @ 0 (-60), Dave withheld 3 @ 2 (-12).
+  Alice's goods are marked down 9 below the market price from next round.
+  Carol's goods are marked down 9 below the market price from next round.
+  Round 5 ends. Northern Syndicate: 50. Southern Combine: 50. The price moves to 0.
+[R6] round 6 — price 0
+  Moves — Alice flooded 10 @ 0 (-60), Bob withheld 3 @ 0 (-18), Carol flooded 10 @ 0 (-60), Dave withheld 3 @ 0 (-18).
+  Alice's goods are marked down 9 below the market price from next round.
+  Carol's goods are marked down 9 below the market price from next round.
+  Round 6 ends. Northern Syndicate: -28. Southern Combine: -28. The price moves to 0.
+[R7] round 7 — price 0
+  Moves — Alice flooded 10 @ 0 (-60), Bob withheld 3 @ 0 (-18), Carol flooded 10 @ 0 (-60), Dave withheld 3 @ 0 (-18).
+  Alice's goods are marked down 9 below the market price from next round.
+  Carol's goods are marked down 9 below the market price from next round.
+  Round 7 ends. Northern Syndicate: -106. Southern Combine: -106. The price moves to 0.
+[R8] round 8 — price 0
+  Moves — Alice flooded 10 @ 0 (-60), Bob withheld 3 @ 0 (-18), Carol flooded 10 @ 0 (-60), Dave withheld 3 @ 0 (-18).
+  Alice's goods are marked down 9 below the market price from next round.
+  Carol's goods are marked down 9 below the market price from next round.
+  Round 8 ends. Northern Syndicate: -184. Southern Combine: -184. The price moves to 0.
+[R9] round 9 — price 0
+  Moves — Alice flooded 10 @ 0 (-60), Bob withheld 3 @ 0 (-18), Carol flooded 10 @ 0 (-60), Dave withheld 3 @ 0 (-18).
+  Alice's goods are marked down 9 below the market price from next round.
+  Carol's goods are marked down 9 below the market price from next round.
+  Round 9 ends. Northern Syndicate: -262. Southern Combine: -262. The price moves to 0.
+[R10] round 10 — price 0
+  Moves — Alice flooded 10 @ 0 (-60), Bob withheld 3 @ 0 (-18), Carol flooded 10 @ 0 (-60), Dave withheld 3 @ 0 (-18).
+  Alice's goods are marked down 9 below the market price from next round.
+  Carol's goods are marked down 9 below the market price from next round.
+  Round 10 ends. Northern Syndicate: -340. Southern Combine: -340. The price moves to 0.
+winners: []
+verdict: Dead heat: both cartels finish with -340.
+table: # | Alice | Bob | Carol | Dave | Price | Northern Syndicate | Southern Combine
+  1 | FLOOD | WITHHOLD | FLOOD | WITHHOLD | 8 | 252 | 252
+  2 | FLOOD | WITHHOLD | FLOOD | WITHHOLD | 6 | 248 | 248
+  3 | FLOOD | WITHHOLD | FLOOD | WITHHOLD | 4 | 188 | 188
+  4 | FLOOD | WITHHOLD | FLOOD | WITHHOLD | 2 | 122 | 122
+  5 | FLOOD | WITHHOLD | FLOOD | WITHHOLD | 0 | 50 | 50
+  6 | FLOOD | WITHHOLD | FLOOD | WITHHOLD | 0 | -28 | -28
+  7 | FLOOD | WITHHOLD | FLOOD | WITHHOLD | 0 | -106 | -106
+  8 | FLOOD | WITHHOLD | FLOOD | WITHHOLD | 0 | -184 | -184
+  9 | FLOOD | WITHHOLD | FLOOD | WITHHOLD | 0 | -262 | -262
+  10 | FLOOD | WITHHOLD | FLOOD | WITHHOLD | 0 | -340 | -340

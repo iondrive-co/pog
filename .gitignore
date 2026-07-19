@@ -1,0 +1,21 @@
+# Dependencies
+node_modules/
+
+# Build output (rebuilt on `npm pack`/`npm publish` via the prepack script)
+dist/
+dist-demo/
+
+# Packed release artifacts (from `npm pack` rehearsals)
+*.tgz
+
+# Vite cache
+.vite/
+
+# Logs & OS cruft
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+
+# Local transcripts (dev server writes these)
+/tmp/pog-transcripts/
