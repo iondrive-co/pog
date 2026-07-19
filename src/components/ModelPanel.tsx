@@ -81,12 +81,6 @@ export function ModelPanel(props: {
       </div>
       {gpu === null && <p className="muted small">Checking WebGPU support…</p>}
       {gpu !== null && !gpu.ok && <p className="warning">{GPU_MESSAGES[gpu.reason]}</p>}
-      {gpu?.ok && !gpu.f16 && (
-        <p className="muted small">
-          This GPU/browser doesn't support shader-f16, so the f32 model builds are listed
-          (same models, roughly twice the download).
-        </p>
-      )}
       <div className="row">
         <select value={base} onChange={(e) => setBase(e.target.value)} disabled={engine.status === "loading"}>
           {models.map((m) => (
@@ -121,10 +115,8 @@ export function ModelPanel(props: {
       {engine.status === "error" && <p className="warning">Failed to load models: {engine.error}</p>}
       {engine.status === "idle" && gpuOk && (
         <p className="muted small">
-          Load a model to hand it a seat below — human and rule-based seats need none. Each
-          model downloads once and is cached by your browser; the size beside each name is
-          roughly the GPU memory it needs, and every loaded model must fit at the same time.
-          Everything runs on your device — nothing is sent to a server.
+          Load a model to play against an LLM rather than the default rules based agent. Each
+          model downloads once and is cached by your browser.
         </p>
       )}
     </section>
