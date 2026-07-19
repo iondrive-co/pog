@@ -143,7 +143,8 @@ accumulate), and every number a template renders shows at most one decimal
 ## Phases: the steps of a round
 
 Each entry in `phases` is one simultaneous step: every seat picks at once, nobody seeing
-another's pick. A phase has an `ask` (the question), a list of `choices`, and optionally a
+another's pick. A phase has a list of `choices`, an optional `ask` (the question shown
+above them — omit it when the choices speak for themselves), and optionally a
 `resolve` block that runs after everyone has chosen.
 
 ```yaml

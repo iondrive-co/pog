@@ -520,8 +520,11 @@ export function webLLMAgent(options: WebLLMAgentOptions = {}): Agent {
         )
         .join("\n");
       const ids = req.choices.map((c) => c.id).join(", ");
+      // `req.prompt` is optional (a phase may have no `ask`); skip its paragraph
+      // entirely when empty so the observation flows straight into the options.
+      const promptBlock = req.prompt ? `${req.prompt}\n\n` : "";
       const ask =
-        `${req.observation}\n\n${req.prompt}\n\n${proto.optionsHeader}\n${list}\n\n` +
+        `${req.observation}\n\n${promptBlock}${proto.optionsHeader}\n${list}\n\n` +
         fill(proto.instruction, { ids });
 
       // The angle-bracket hint inside the JSON template, e.g. "your reasoning,

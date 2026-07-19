@@ -319,7 +319,7 @@ export function MatchView<S>(props: MatchViewProps<S>) {
               {whoseTurn}
               {seatDecisions.map((d) => (
                 <fieldset key={d.key} className="axis-group">
-                  <legend>{d.prompt}</legend>
+                  {d.prompt ? <legend>{d.prompt}</legend> : null}
                   <div className="row">
                     {d.choices.map((c) => (
                       <label

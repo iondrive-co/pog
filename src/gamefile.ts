@@ -243,6 +243,7 @@ interface BotRuleDef {
  */
 interface PhaseDef {
   key: string;
+  /** The question shown above the choices; "" when the phase authors no `ask`. */
   ask: string;
   choices: ChoiceDef[];
   /** Emitted when a whole phase resolves and nobody had a `say`. */
@@ -927,14 +928,17 @@ function normalize(doc: unknown): Model {
         if (!isRecord(a)) return fail(`${awhere} must be a set of \`key: value\` entries`);
         const axisKey = typeof a.axis === "string" && a.axis.trim() ? a.axis.trim() : fail(`${awhere}: "axis" must name the axis, e.g. lab`);
         if (a.by !== undefined && a.by !== "everyone") return fail(`${awhere} ("${axisKey}"): only "by: everyone" is supported`);
-        if (typeof a.ask !== "string") return fail(`${awhere} ("${axisKey}"): "ask" is required — the question put to each seat`);
+        // `ask` is optional — the question shown above the choices. When absent
+        // the choices (and their notes) stand on their own.
+        if (a.ask !== undefined && typeof a.ask !== "string") return fail(`${awhere} ("${axisKey}"): "ask" must be text — the question put to each seat`);
         const { choices, ids } = parseChoices(a.choices, `${awhere} ("${axisKey}")`);
-        units.push({ key: axisKey, ask: a.ask, choices, bot: parseBot(a.bot, ids, `${awhere} ("${axisKey}")`) });
+        units.push({ key: axisKey, ask: typeof a.ask === "string" ? a.ask : "", choices, bot: parseBot(a.bot, ids, `${awhere} ("${axisKey}")`) });
       });
     } else {
-      if (typeof raw.ask !== "string") return fail(`${where} ("${groupKey}"): "ask" is required — the question put to each seat`);
+      // `ask` is optional (see the axes branch above).
+      if (raw.ask !== undefined && typeof raw.ask !== "string") return fail(`${where} ("${groupKey}"): "ask" must be text — the question put to each seat`);
       const { choices, ids } = parseChoices(raw.choices, `${where} ("${groupKey}")`);
-      units.push({ key: groupKey, ask: raw.ask, choices, bot: parseBot(raw.bot, ids, `${where} ("${groupKey}")`) });
+      units.push({ key: groupKey, ask: typeof raw.ask === "string" ? raw.ask : "", choices, bot: parseBot(raw.bot, ids, `${where} ("${groupKey}")`) });
     }
 
     const batch: number[] = [];
