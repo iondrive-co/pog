@@ -1,7 +1,10 @@
 import type { GameOption, GameSpec, OptionValues } from "../dsl.js";
 import type { MatchConfig, SeatConfig, SeatKind } from "../config.js";
 import { defaultSeat, isAutoSeatName } from "../config.js";
+import { STR, fmt } from "../strings.js";
 import type { ModelChoice } from "../webllm/index.js";
+
+const S = STR.setupPanel;
 
 /**
  * The seat picker's non-model values. "@" keeps them out of the model-base
@@ -32,23 +35,23 @@ function SeatEditor(props: {
   return (
     <div className="player-editor">
       <h3>
-        {seat.kind === "human" ? "🧑" : "🤖"} Player {index + 1}
-        {roleName ? ` — ${roleName}` : ""}
+        {seat.kind === "human" ? S.badgeHuman : S.badgeBot} {fmt(S.seatHeading, { n: index + 1 })}
+        {roleName ? fmt(S.seatHeadingRoleSuffix, { role: roleName }) : ""}
         {onRemove && (
           <>
             {" "}
             <button className="stop" onClick={onRemove}>
-              Remove
+              {S.removeSeatButton}
             </button>
           </>
         )}
       </h3>
       <label>
-        Name
+        {S.nameLabel}
         <input value={seat.name} onChange={(e) => onName(e.target.value)} maxLength={20} />
       </label>
       <label>
-        Played by
+        {S.playedByLabel}
         <select value={brainValue} onChange={(e) => onBrain(e.target.value)}>
           {brains.map((b) => (
             <option key={b.value} value={b.value} disabled={b.disabled}>
@@ -132,13 +135,13 @@ export function SetupPanel(props: SetupPanelProps) {
   // What plays a seat: the human, the rule-based strategy, or a loaded model.
   const botAvailable = spec.bot !== undefined;
   const brains: BrainOption[] = [
-    { value: HUMAN, label: "You" },
-    ...(botAvailable ? [{ value: RULE_BASED, label: "Rule-based - no model" }] : []),
+    { value: HUMAN, label: S.humanOption },
+    ...(botAvailable ? [{ value: RULE_BASED, label: S.ruleBasedOption }] : []),
     ...models.map((m) => ({
       value: m.base,
       label:
-        `${m.label} — ~${(m.vramMB / 1024).toFixed(1)} GB VRAM` +
-        (loadedIds.includes(m.id) ? "" : " (load it above)"),
+        fmt(S.modelOption, { model: m.label, size: (m.vramMB / 1024).toFixed(1) }) +
+        (loadedIds.includes(m.id) ? "" : S.modelOptionUnloadedSuffix),
       disabled: !loadedIds.includes(m.id),
     })),
   ];
@@ -171,7 +174,7 @@ export function SetupPanel(props: SetupPanelProps) {
   return (
     <section className="card">
       <div className="card-title">
-        <h2>{spec.name} — match setup</h2>
+        <h2>{fmt(S.title, { "game name": spec.name })}</h2>
       </div>
       <div className="row">
         {(spec.options ?? []).map((opt) => (
@@ -203,23 +206,15 @@ export function SetupPanel(props: SetupPanelProps) {
       </div>
       {config.seats.length < spec.seats.max && (
         <div className="row">
-          <button onClick={addSeat}>Add player</button>
+          <button onClick={addSeat}>{S.addPlayerButton}</button>
         </div>
       )}
       <div className="row">
         <button className="primary big" onClick={onStart} disabled={!canStart}>
-          Start match
+          {S.startButton}
         </button>
-        {spectating && canStart && (
-          <span className="muted small">
-            No human seat — the bots will play the whole match out by themselves.
-          </span>
-        )}
-        {!canStart && needsModel && (
-          <span className="muted small">
-            Load the models above to start (a seat plays with one that isn't loaded).
-          </span>
-        )}
+        {spectating && canStart && <span className="muted small">{S.spectatingNote}</span>}
+        {!canStart && needsModel && <span className="muted small">{S.needsModelNote}</span>}
       </div>
     </section>
   );

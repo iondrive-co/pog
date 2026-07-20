@@ -25,9 +25,13 @@
     "./dist/webllm/worker.js"
   ],
   "scripts": {
+    "gen": "node scripts/gen-strings.mjs",
+    "predev": "npm run gen",
     "dev": "node scripts/dev.mjs",
+    "predev:https": "npm run gen",
     "dev:https": "POG_HTTPS=1 node scripts/dev.mjs",
     "stop": "node scripts/stop.mjs",
+    "precheck": "npm run gen",
     "check": "tsc --noEmit",
     "build": "npm run check && tsc -p tsconfig.lib.json && cp src/styles.css dist/styles.css",
     "pretest": "npm run build",

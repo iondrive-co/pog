@@ -7,6 +7,7 @@
 
 import type { Choice, Decision, GameSpec, OptionValues } from "./dsl.js";
 import { defaultOptions } from "./dsl.js";
+import { STR, fmt } from "./strings.js";
 
 /** A line in the match transcript: agent reasoning, game narration, or an error. */
 export interface TranscriptEntry {
@@ -164,9 +165,7 @@ export class Match<S> {
         resolved[d.key] = randomLegal();
         entries.push({
           author: this.seatNames[d.seat],
-          text:
-            `(the agent failed — ${err instanceof Error ? err.message : String(err)} — ` +
-            `so a random choice was played instead)`,
+          text: fmt(STR.engine.agentFailed, { error: err instanceof Error ? err.message : String(err) }),
           kind: "error",
           tag,
         });
@@ -179,10 +178,7 @@ export class Match<S> {
       resolved[d.key] = choiceId;
       entries.push({
         author: this.seatNames[d.seat],
-        text: legal
-          ? reply.reasoning
-          : `(the agent chose "${reply.choiceId}", which is not a legal option; ` +
-            `a random choice was played instead)`,
+        text: legal ? reply.reasoning : fmt(STR.engine.agentIllegalChoice, { choice: reply.choiceId }),
         kind: legal && !reply.parseFailed ? "reasoning" : "error",
         tag,
       });
@@ -191,7 +187,7 @@ export class Match<S> {
     const result = this.spec.apply(this.state, resolved);
     this.state = result.state;
     for (const ev of result.events ?? []) {
-      const { author = "Result", text } = typeof ev === "string" ? { text: ev } : ev;
+      const { author = STR.engine.narrationAuthor, text } = typeof ev === "string" ? { text: ev } : ev;
       entries.push({ author, text, kind: "info", tag });
     }
     return entries;

@@ -8,6 +8,7 @@
 
 import type { MLCEngineInterface } from "@mlc-ai/web-llm";
 import type { Agent, AgentReply, AgentRequest } from "../engine.js";
+import { STR, fmt } from "../strings.js";
 
 interface ModelInfo {
   /** WebLLM model_id stem (before the -q4f16_1-MLC / -q4f32_1-MLC suffix). */
@@ -159,13 +160,7 @@ let worker: Worker | null = null;
 function toLoadError(err: unknown): Error {
   const msg = err instanceof Error ? err.message : String(err);
   if (/disposed|device.*lost|out of memory|GPUOutOfMemory|maxBufferSize|maxStorageBuffer/i.test(msg)) {
-    return new Error(
-      "The GPU ran out of memory while loading this model, so the WebGPU device was lost. " +
-        "Try a smaller model (e.g. Qwen2.5-0.5B or SmolLM2-360M) or, if a q4f16 build is " +
-        "offered, prefer it — the q4f32 builds need about twice the memory. Note that " +
-        "Firefox's WebGPU (especially on Linux) is experimental and more memory-constrained " +
-        "than Chrome/Edge, so switching browser or closing other GPU-heavy tabs can also help.",
-    );
+    return new Error(STR.errors.gpuOutOfMemory);
   }
   return err instanceof Error ? err : new Error(msg);
 }
@@ -198,12 +193,12 @@ export async function loadModels(
   onProgress: (text: string, progress: number) => void,
   options: LoadModelOptions = {},
 ): Promise<void> {
-  if (modelIds.length === 0) throw new Error("No models to load");
-  onProgress("Loading WebLLM runtime…", 0);
+  if (modelIds.length === 0) throw new Error(STR.errors.noModelsToLoad);
+  onProgress(STR.modelPanel.progressRuntime, 0);
   const webllm = await import("@mlc-ai/web-llm");
   for (const id of modelIds) {
     if (!webllm.prebuiltAppConfig.model_list.some((m) => m.model_id === id)) {
-      throw new Error(`Model ${id} is not in this WebLLM build's prebuilt list`);
+      throw new Error(fmt(STR.errors.modelNotPrebuilt, { id }));
     }
   }
   const chatOpts = modelIds.map(() => ({
@@ -308,7 +303,7 @@ function toGenerationError(err: unknown): Error {
  */
 export class GenerationStalled extends Error {
   constructor(public readonly stallMs: number) {
-    super(`the model produced no token for ${Math.round(stallMs / 1000)}s and was interrupted`);
+    super(fmt(STR.errors.generationStalled, { seconds: Math.round(stallMs / 1000) }));
     this.name = "GenerationStalled";
   }
 }
@@ -331,13 +326,13 @@ async function chat(
   model?: string,
 ): Promise<string> {
   if (!engine) {
-    throw new Error(
-      "no model is loaded — it may have been dropped after a GPU failure; reload one from the setup screen",
-    );
+    throw new Error(STR.errors.noModelLoaded);
   }
   // With several models resident, WebLLM needs each request to name its model.
   if (model !== undefined && !loadedIds.includes(model)) {
-    throw new Error(`Model ${model} is not loaded (loaded: ${loadedIds.join(", ") || "none"})`);
+    throw new Error(
+      fmt(STR.errors.modelNotLoaded, { model, ids: loadedIds.join(", ") || STR.errors.modelNotLoadedNone }),
+    );
   }
   const active = engine;
 
@@ -459,24 +454,15 @@ export interface AgentProtocol {
 }
 
 export const DEFAULT_PROTOCOL: AgentProtocol = {
-  optionsHeader: "Your options:",
-  option: '- "{id}": {label}',
-  optionWithDetail: '- "{id}": {label} — {detail}',
-  instruction:
-    "Respond with ONLY a JSON object and no other text:\n" +
-    '{"reasoning": "<your reasoning, under 50 words>", "choice": "<one of: {ids}>"}',
-  retry:
-    "IMPORTANT: your previous reply could not be parsed. " +
-    "Reply with exactly one JSON object in the format above.",
-  unparsed: "(reply could not be parsed; a random choice was played instead)",
-  stalled: "(the model stopped responding and was interrupted; a random choice was played instead)",
-  noReasoning: "(no reasoning given)",
+  optionsHeader: STR.llmAgent.promptOnly.optionsHeader,
+  option: STR.llmAgent.promptOnly.option,
+  optionWithDetail: STR.llmAgent.promptOnly.optionWithDetail,
+  instruction: STR.llmAgent.promptOnly.instruction,
+  retry: STR.llmAgent.promptOnly.retry,
+  unparsed: STR.llmAgent.unparsedReply,
+  stalled: STR.llmAgent.stalledReply,
+  noReasoning: STR.llmAgent.noReasoning,
 };
-
-/** Fill {placeholders} in a protocol template. */
-function fill(tpl: string, vars: Record<string, string>): string {
-  return tpl.replace(/\{([a-z][a-z0-9 ]*)\}/g, (m, key: string) => vars[key] ?? m);
-}
 
 export interface WebLLMAgentOptions {
   /**
@@ -512,7 +498,7 @@ export function webLLMAgent(options: WebLLMAgentOptions = {}): Agent {
       const system = req.rules.trim();
       const list = req.choices
         .map((c) =>
-          fill(c.detail ? proto.optionWithDetail : proto.option, {
+          fmt(c.detail ? proto.optionWithDetail : proto.option, {
             id: c.id,
             label: c.label,
             detail: c.detail ?? "",
@@ -525,7 +511,7 @@ export function webLLMAgent(options: WebLLMAgentOptions = {}): Agent {
       const promptBlock = req.prompt ? `${req.prompt}\n\n` : "";
       const ask =
         `${req.observation}\n\n${promptBlock}${proto.optionsHeader}\n${list}\n\n` +
-        fill(proto.instruction, { ids });
+        fmt(proto.instruction, { ids });
 
       // The angle-bracket hint inside the JSON template, e.g. "your reasoning,
       // under 50 words". Small models sometimes copy it verbatim instead of

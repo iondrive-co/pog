@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { STR, fmt } from "../strings.js";
 import {
   loadModels,
   DEFAULT_MODEL_BASE,
@@ -8,20 +9,12 @@ import {
   type ModelChoice,
 } from "../webllm/index.js";
 
+const S = STR.modelPanel;
+
 const GPU_MESSAGES: Record<Extract<GPUSupport, { ok: false }>["reason"], string> = {
-  "insecure-context":
-    "WebGPU is hidden because this page was loaded over plain HTTP from a non-localhost " +
-    "address (browsers only expose the API in a secure context). Open this app via " +
-    "http://localhost instead, or run `npm run dev:https` and accept the self-signed " +
-    "certificate if you need to reach it from another device on the LAN.",
-  "no-api":
-    "This browser doesn't expose WebGPU. Recent desktop Chrome and Edge enable it by " +
-    "default, as do current Firefox releases (on Linux you may need dom.webgpu.enabled in " +
-    "about:config) and Safari 18+.",
-  "no-adapter":
-    "WebGPU is available, but the browser returned no GPU adapter — the GPU or its driver " +
-    "is likely blocklisted. Check about:gpu in Chrome or the Graphics section of " +
-    "about:support in Firefox.",
+  "insecure-context": S.gpuInsecureContext,
+  "no-api": S.gpuNoApi,
+  "no-adapter": S.gpuNoAdapter,
 };
 
 /**
@@ -53,14 +46,14 @@ export function ModelPanel(props: {
     // loaded stays loaded alongside the new model.
     const ids = [...engine.loaded.filter((id) => id !== chosen.id), chosen.id];
     const before = engine.loaded;
-    setEngine({ status: "loading", loaded: before, progressText: "Starting…", progress: 0 });
+    setEngine({ status: "loading", loaded: before, progressText: S.progressStarting, progress: 0 });
     try {
       await loadModels(
         ids,
         (text, progress) => setEngine({ status: "loading", loaded: before, progressText: text, progress }),
         loadOptions,
       );
-      setEngine({ status: "ready", loaded: ids, progressText: "Models ready", progress: 1 });
+      setEngine({ status: "ready", loaded: ids, progressText: S.progressReady, progress: 1 });
     } catch (err) {
       // A failed (re)load drops everything — reflect that honestly.
       setEngine({
@@ -76,17 +69,19 @@ export function ModelPanel(props: {
   return (
     <section className="card">
       <div className="card-title">
-        <h2>Models</h2>
-        {engine.loaded.length > 0 && <span className="chip chip-ok">✓ {loadedLabels.join(", ")}</span>}
+        <h2>{S.title}</h2>
+        {engine.loaded.length > 0 && (
+          <span className="chip chip-ok">{fmt(S.loadedChip, { models: loadedLabels.join(", ") })}</span>
+        )}
       </div>
-      {gpu === null && <p className="muted small">Checking WebGPU support…</p>}
+      {gpu === null && <p className="muted small">{S.checkingGpu}</p>}
       {gpu !== null && !gpu.ok && <p className="warning">{GPU_MESSAGES[gpu.reason]}</p>}
       <div className="row">
         <select value={base} onChange={(e) => setBase(e.target.value)} disabled={engine.status === "loading"}>
           {models.map((m) => (
             <option key={m.base} value={m.base}>
-              {m.label} — ~{(m.vramMB / 1024).toFixed(1)} GB VRAM
-              {engine.loaded.includes(m.id) ? " ✓" : ""}
+              {fmt(S.modelOption, { model: m.label, size: (m.vramMB / 1024).toFixed(1) })}
+              {engine.loaded.includes(m.id) ? S.modelOptionLoadedSuffix : ""}
             </option>
           ))}
         </select>
@@ -96,12 +91,12 @@ export function ModelPanel(props: {
           disabled={!gpuOk || engine.status === "loading" || alreadyLoaded}
         >
           {alreadyLoaded
-            ? "Loaded"
+            ? S.loadedButton
             : engine.status === "loading"
-              ? "Loading…"
+              ? S.loadingButton
               : engine.loaded.length > 0
-                ? "Load another model"
-                : "Load model"}
+                ? S.loadAnotherButton
+                : S.loadButton}
         </button>
       </div>
       {engine.status === "loading" && (
@@ -112,13 +107,10 @@ export function ModelPanel(props: {
           <p className="muted small">{engine.progressText}</p>
         </div>
       )}
-      {engine.status === "error" && <p className="warning">Failed to load models: {engine.error}</p>}
-      {engine.status === "idle" && gpuOk && (
-        <p className="muted small">
-          Load a model to play against an LLM rather than the default rules based agent. Each
-          model downloads once and is cached by your browser.
-        </p>
+      {engine.status === "error" && (
+        <p className="warning">{fmt(S.loadFailed, { error: engine.error ?? "" })}</p>
       )}
+      {engine.status === "idle" && gpuOk && <p className="muted small">{S.idleHint}</p>}
     </section>
   );
 }

@@ -2,7 +2,10 @@ import { useEffect, useMemo, useReducer, useRef, useState } from "react";
 import type { GameSpec, OptionValues, Outcome } from "../dsl.js";
 import type { SeatConfig } from "../config.js";
 import { Match, ruleAgent, type Agent, type TranscriptEntry } from "../engine.js";
+import { STR, fmt } from "../strings.js";
 import { Transcript } from "./Transcript.js";
+
+const S = STR.matchView;
 
 /** A snapshot of a running (or finished) match, handed to `onUpdate`. */
 export interface MatchUpdate<S> {
@@ -94,8 +97,8 @@ export function MatchView<S>(props: MatchViewProps<S>) {
     setTranscript((t) => [
       ...t,
       {
-        author: "System",
-        text: `Error: ${err instanceof Error ? err.message : String(err)}`,
+        author: S.errorAuthor,
+        text: fmt(S.errorEntry, { message: err instanceof Error ? err.message : String(err) }),
         kind: "error",
       },
     ]);
@@ -217,16 +220,14 @@ export function MatchView<S>(props: MatchViewProps<S>) {
     <div className="match-grid">
       <section className="card">
         <div className="card-title">
-          <h2>
-            {spec.name} — {spec.view.status(match.state)}
-          </h2>
+          <h2>{fmt(S.title, { "game name": spec.name, status: spec.view.status(match.state) })}</h2>
           <button
             onClick={() => {
               autoRef.current = false;
               onExit();
             }}
           >
-            New match
+            {S.newMatchButton}
           </button>
         </div>
 
@@ -255,8 +256,8 @@ export function MatchView<S>(props: MatchViewProps<S>) {
               {seats.map((s, i) => (
                 <tr key={i}>
                   <td className="score-name">
-                    {s.name} {s.kind === "human" ? "🧑" : "🤖"}
-                    {spec.seats.roleNames?.[i] ? ` (${spec.seats.roleNames[i]})` : ""}
+                    {s.name} {s.kind === "human" ? STR.setupPanel.badgeHuman : STR.setupPanel.badgeBot}
+                    {spec.seats.roleNames?.[i] ? fmt(S.seatRoleSuffix, { role: spec.seats.roleNames[i] }) : ""}
                   </td>
                   {seatStats.rows[i].map((v, j) => (
                     <td key={j}>{v}</td>
@@ -270,8 +271,8 @@ export function MatchView<S>(props: MatchViewProps<S>) {
             {seats.map((s, i) => (
               <div key={i} className="score">
                 <span className="score-name">
-                  {s.name} {s.kind === "human" ? "🧑" : "🤖"}
-                  {spec.seats.roleNames?.[i] ? ` (${spec.seats.roleNames[i]})` : ""}
+                  {s.name} {s.kind === "human" ? STR.setupPanel.badgeHuman : STR.setupPanel.badgeBot}
+                  {spec.seats.roleNames?.[i] ? fmt(S.seatRoleSuffix, { role: spec.seats.roleNames[i] }) : ""}
                 </span>
                 <span className="score-value">{scores[i]}</span>
               </div>
@@ -342,7 +343,7 @@ export function MatchView<S>(props: MatchViewProps<S>) {
               ))}
               <div className="row">
                 <button className="primary" disabled={!ready} onClick={() => commitSeat(seatDecisions)}>
-                  {nextHuman.commitLabel ?? "Confirm"}
+                  {nextHuman.commitLabel ?? S.defaultCommitButton}
                 </button>
               </div>
             </div>
@@ -355,15 +356,15 @@ export function MatchView<S>(props: MatchViewProps<S>) {
         {!over && !busy && noHumans && anyBotPending && (!props.autoStart || autoPaused) && (
           <div className="action-row row">
             <button className="primary" onClick={() => void resolve({})}>
-              Play round
+              {S.playRoundButton}
             </button>
-            <button onClick={() => void autoPlay()}>Auto-play to the end</button>
+            <button onClick={() => void autoPlay()}>{S.autoplayButton}</button>
           </div>
         )}
 
         {!over && !busy && hasHuman && !nextHuman && anyBotPending && autoPaused && (
           <div className="action-row">
-            <p className="muted small">A bot's turn didn't complete.</p>
+            <p className="muted small">{S.botStalledNote}</p>
             <div className="row">
               <button
                 className="primary"
@@ -372,7 +373,7 @@ export function MatchView<S>(props: MatchViewProps<S>) {
                   void resolve({});
                 }}
               >
-                Continue with {botSeatNames}
+                {fmt(S.continueButton, { "bot names": botSeatNames })}
               </button>
             </div>
           </div>
@@ -380,11 +381,11 @@ export function MatchView<S>(props: MatchViewProps<S>) {
 
         {busy && (
           <p className="thinking">
-            {auto ? "Auto-playing… " : ""}
-            <span className="spinner" /> Bots are thinking…
+            {auto ? S.autoplaying : ""}
+            <span className="spinner" /> {S.thinking}
             {auto && (
               <button className="stop" onClick={() => (autoRef.current = false)}>
-                Stop
+                {S.stopButton}
               </button>
             )}
           </p>

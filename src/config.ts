@@ -6,6 +6,7 @@
 
 import type { GameSpec, OptionValues } from "./dsl.js";
 import { defaultOptions } from "./dsl.js";
+import { STR, fmt } from "./strings.js";
 
 export type SeatKind = "human" | "llm" | "rules";
 
@@ -33,7 +34,7 @@ export function defaultSeat(index: number, kind: SeatKind): SeatConfig {
   // not. The 🧑/🤖 badges still mark who is human.
   return {
     kind,
-    name: `${kind === "human" ? "Player" : "Bot"} ${index + 1}`,
+    name: fmt(kind === "human" ? STR.engine.defaultHumanSeat : STR.engine.defaultBotSeat, { n: index + 1 }),
   };
 }
 

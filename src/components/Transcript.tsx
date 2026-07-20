@@ -1,5 +1,8 @@
 import { useEffect, useRef } from "react";
 import type { TranscriptEntry } from "../engine.js";
+import { STR } from "../strings.js";
+
+const S = STR.transcript;
 
 export function Transcript({ entries }: { entries: TranscriptEntry[] }) {
   const endRef = useRef<HTMLDivElement>(null);
@@ -9,13 +12,13 @@ export function Transcript({ entries }: { entries: TranscriptEntry[] }) {
 
   return (
     <div className="transcript">
-      <h3>Transcript</h3>
+      <h3>{S.title}</h3>
       <div className="transcript-scroll">
-        {entries.length === 0 && <p className="muted small">Player reasoning will appear here.</p>}
+        {entries.length === 0 && <p className="muted small">{S.emptyPlaceholder}</p>}
         {entries.map((e, i) => (
           <div key={i} className={`transcript-entry transcript-${e.kind}`}>
             <span className="transcript-meta">
-              {e.tag ? `${e.tag} · ` : ""}
+              {e.tag ? `${e.tag}${S.metaSeparator}` : ""}
               {e.author}
             </span>
             <p>{e.text}</p>

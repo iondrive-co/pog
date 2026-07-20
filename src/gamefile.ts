@@ -19,6 +19,7 @@
 
 import { parse as parseYAML } from "yaml";
 import type { BotPick, Choice, Decision, GameOption, GameSpec, Outcome, StepResult } from "./dsl.js";
+import { STR } from "./strings.js";
 
 // ---------------------------------------------------------------------------
 // Tiny arithmetic expressions: numbers, (multi-word) names, + - * / , unary -,
@@ -1443,7 +1444,7 @@ export function compileGame(doc: unknown): GameSpec<GameFileState> {
                 // (the players watching this screen); every other row renders
                 // the authored `masked` template — "?" when none is given.
                 const hidden = s.secret && !reveal.includes(seat);
-                if (hidden && s.masked === undefined) return "?";
+                if (hidden && s.masked === undefined) return STR.engine.defaultMaskedSecret;
                 const out = render(hidden ? s.masked! : s.value, env);
                 if (s.map && /^-?\d+$/.test(out)) {
                   // In range the map supplies the label; out of range the

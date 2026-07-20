@@ -1,0 +1,235 @@
+# =============================================================================
+# pog — every piece of text the library puts on screen. THIS FILE IS LIVE.
+# =============================================================================
+#
+# HOW THIS FILE WORKS
+#
+# - This file is the source of truth: scripts/gen-strings.mjs compiles it into
+#   src/strings.ts (generated, do not edit), which every component imports.
+#   The generator runs automatically before check/build/dev/test, so editing
+#   this file and rebuilding is all it takes — `npm run gen` regenerates it
+#   by hand if you want to see the module without building.
+# - Keys become identifiers: "seat heading role suffix" → seatHeadingRoleSuffix.
+#   Renaming a key means updating the component that reads it; changing only a
+#   VALUE is always safe.
+# - Anything in {curly braces} is filled in by the code at run time — keep the
+#   placeholder names, but you can move them around inside the sentence.
+#
+# SCOPE
+# - Only the library UI (src/): these strings appear in every game a host
+#   builds on pog, including AI Tycoon on iondrive.co.
+# - Game-authored text (names, choices, narration, rules) comes from each
+#   game's own file — AI Tycoon's is sightseer/aitycoon/translations.yaml.
+# - The demo site (demo/) and authoring-time errors (gamefile.ts `fail()`
+#   messages, seen only by game authors with a broken YAML) are excluded.
+# =============================================================================
+
+
+# -----------------------------------------------------------------------------
+# 1. Match setup (SetupPanel)
+# -----------------------------------------------------------------------------
+setup panel:
+  # The card title, e.g. "AI Tycoon — match setup".
+  title: "{game name} — match setup"
+  # Badge before each seat heading (also on the match screen's seat rows).
+  badge human: "🧑"
+  badge bot: "🤖"
+  # Heading per seat ("Player 1"), plus the role suffix when the game names
+  # its seats (" — OpenBrain").
+  seat heading: "Player {n}"
+  seat heading role suffix: " — {role}"
+  # Button on removable seats.
+  remove seat button: Remove
+  # Label on the seat-name input.
+  name label: Name
+  # Label on the who-plays-this-seat dropdown.
+  played by label: Played by
+  # Dropdown entry for the human at the screen.
+  human option: You
+  # Dropdown entry for the game's built-in strategy.
+  rule based option: Rule-based - no model
+  # Dropdown entry per model, plus the suffix when it isn't loaded yet.
+  model option: "{model} — ~{size} GB VRAM"
+  model option unloaded suffix: " (load it above)"
+  add player button: Add player
+  start button: Start match
+  # Note when no seat is human (the match will spectate itself).
+  spectating note: Humans have been removed (from this game).
+  # Note when a seat's model isn't loaded yet, blocking start.
+  needs model note: Load the models above to start.
+
+
+# -----------------------------------------------------------------------------
+# 2. Model loader (ModelPanel + the WebLLM loader's progress text)
+# -----------------------------------------------------------------------------
+model panel:
+  title: Models
+  # Chip listing the loaded models.
+  loaded chip: "✓ {models}"
+  # While the GPU probe runs.
+  checking gpu: Checking WebGPU support…
+  # WebGPU blocked: page served over plain HTTP.
+  gpu insecure context: >-
+    WebGPU is hidden because this page was loaded over plain HTTP from a
+    non-localhost address (browsers only expose the API in a secure
+    context). Open this app via http://localhost instead, or run `npm run
+    dev:https` and accept the self-signed certificate if you need to reach
+    it from another device on the LAN.
+  # WebGPU blocked: browser doesn't expose the API.
+  gpu no api: >-
+    This browser doesn't expose WebGPU. Recent desktop Chrome and Edge
+    enable it by default, as do current Firefox releases (on Linux you may
+    need dom.webgpu.enabled in about:config) and Safari 18+.
+  # WebGPU blocked: no adapter (blocklisted GPU/driver).
+  gpu no adapter: >-
+    WebGPU is available, but the browser returned no GPU adapter — the GPU
+    or its driver is likely blocklisted. Check about:gpu in Chrome or the
+    Graphics section of about:support in Firefox.
+  # Dropdown entry per model, plus the suffix once it's loaded.
+  model option: "{model} — ~{size} GB VRAM"
+  model option loaded suffix: " ✓"
+  # The load button's four states.
+  load button: Load model
+  load another button: Load another model
+  loading button: Loading…
+  loaded button: Loaded
+  # First progress text when a load starts.
+  progress starting: Starting…
+  # Progress text while the WebLLM runtime downloads.
+  progress runtime: Loading WebLLM runtime…
+  # Progress text when all models are in.
+  progress ready: Models ready
+  # Prefix before the error message when a load fails.
+  load failed: "Failed to load models: {error}"
+  # Hint shown before anything is loaded.
+  idle hint: >-
+    Load a model to play against an LLM rather than the default rules
+    based agent. Each model downloads once and is cached by your browser.
+  # The model names in the dropdown are data (src/webllm/index.ts MODELS
+  # list): SmolLM2 360M, Qwen2.5 0.5B, Llama 3.2 1B, … — reword there if
+  # ever needed.
+
+
+# -----------------------------------------------------------------------------
+# 3. The match screen (MatchView)
+# -----------------------------------------------------------------------------
+match view:
+  # Header: game name + the game's own status line.
+  title: "{game name} — {status}"
+  # Button back to setup.
+  new match button: New match
+  # Role suffix after a seat's name in the stats table and scoreboard,
+  # e.g. "Bot 2 (DeepCent)".
+  seat role suffix: " ({role})"
+  # Commit-button label when the game doesn't author a `commit:`
+  # (AI Tycoon overrides it with "End quarter").
+  default commit button: Confirm
+  # Manual controls for an all-bot match that isn't auto-playing.
+  play round button: Play round
+  autoplay button: Auto-play to the end
+  # Shown when a bot's turn failed and needs a nudge.
+  bot stalled note: A bot's turn didn't complete.
+  continue button: "Continue with {bot names}"
+  # The thinking indicator (trailing space intentional).
+  autoplaying: "Auto-playing… "
+  thinking: Bots are thinking…
+  # Stops auto-play.
+  stop button: Stop
+  # Transcript entry when a step throws, and its author name.
+  error entry: "Error: {message}"
+  error author: System
+
+
+# -----------------------------------------------------------------------------
+# 4. Transcript panel
+# -----------------------------------------------------------------------------
+transcript:
+  title: Transcript
+  # Placeholder before any entries.
+  empty placeholder: Player reasoning will appear here.
+  # Between the turn tag and the author ("Q3 · OpenBrain").
+  meta separator: " · "
+
+
+# -----------------------------------------------------------------------------
+# 5. Engine fail-softs and defaults (engine, config, gamefile)
+# -----------------------------------------------------------------------------
+engine:
+  # Transcript entry when an agent crashes mid-turn.
+  agent failed: >-
+    (the agent failed — {error} — so a random choice was played instead)
+  # Transcript entry when an agent picks an illegal option.
+  agent illegal choice: >-
+    (the agent chose "{choice}", which is not a legal option; a random
+    choice was played instead)
+  # Default author name on game narration entries.
+  narration author: Result
+  # Default names for seats a game doesn't name.
+  default human seat: "Player {n}"
+  default bot seat: "Bot {n}"
+  # What a rival's secret stat shows when the game authors no `masked`
+  # template (AI Tycoon's Cash column relies on this).
+  default masked secret: "?"
+
+
+# -----------------------------------------------------------------------------
+# 6. The built-in LLM agent (DEFAULT_PROTOCOL)
+# The first three ARE displayed: they land in the transcript as the seat's
+# reasoning when a reply couldn't be used. The rest is prompt-only wording the
+# models read — hosts can override it (Arena's `protocol` prop) and its
+# phrasing shapes the replies that DO display.
+# -----------------------------------------------------------------------------
+llm agent:
+  # Transcript reasoning when the reply couldn't be parsed.
+  unparsed reply: (reply could not be parsed; a random choice was played instead)
+  # Transcript reasoning when generation stalled and was interrupted.
+  stalled reply: (the model stopped responding and was interrupted; a random choice was played instead)
+  # Transcript reasoning when the model gave a choice but no usable reasoning.
+  no reasoning: (no reasoning given)
+
+  prompt only:
+    # Line introducing the option list.
+    options header: "Your options:"
+    # One option; the with-detail form adds the game's `note`.
+    option: '- "{id}": {label}'
+    option with detail: '- "{id}": {label} — {detail}'
+    # The reply-format instruction ({ids} = legal choice ids).
+    instruction: |-
+      Respond with ONLY a JSON object and no other text:
+      {"reasoning": "<your reasoning, under 50 words>", "choice": "<one of: {ids}>"}
+    # Appended after an unparseable reply.
+    retry: >-
+      IMPORTANT: your previous reply could not be parsed. Reply with
+      exactly one JSON object in the format above.
+
+
+# -----------------------------------------------------------------------------
+# 7. Error messages (the WebLLM backend)
+# Authored error strings that reach the screen inside the templates above —
+# "Failed to load models: {error}" on the model panel, or the agent-failed
+# transcript entry.
+# -----------------------------------------------------------------------------
+errors:
+  # A lost GPU device during a load, rethrown with advice.
+  gpu out of memory: >-
+    The GPU ran out of memory while loading this model, so the WebGPU
+    device was lost. Try a smaller model (e.g. Qwen2.5-0.5B or
+    SmolLM2-360M) or, if a q4f16 build is offered, prefer it — the q4f32
+    builds need about twice the memory. Note that Firefox's WebGPU
+    (especially on Linux) is experimental and more memory-constrained than
+    Chrome/Edge, so switching browser or closing other GPU-heavy tabs can
+    also help.
+  # A decision requested with no engine resident.
+  no model loaded: >-
+    no model is loaded — it may have been dropped after a GPU failure;
+    reload one from the setup screen
+  # A decision naming a model that isn't resident ("none" when the loaded
+  # list is empty).
+  model not loaded: "Model {model} is not loaded (loaded: {ids})"
+  model not loaded none: none
+  # loadModels called with an empty list.
+  no models to load: No models to load
+  # A model id WebLLM's prebuilt list doesn't know.
+  model not prebuilt: Model {id} is not in this WebLLM build's prebuilt list
+  # The stall watchdog's interruption notice.
+  generation stalled: the model produced no token for {seconds}s and was interrupted
