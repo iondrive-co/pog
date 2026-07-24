@@ -282,6 +282,26 @@ button.stop {
   font-weight: 600;
 }
 
+/* A seat name that carries a strengths/weaknesses tooltip: hint it's hoverable. */
+.seat-stats td.seat-name[data-tip] {
+  cursor: help;
+  text-decoration: underline dotted var(--text-muted);
+  text-underline-offset: 3px;
+}
+
+/* A stat cell whose value just fell (e.g. investor confidence after a scandal
+   or a rival's open release) — flagged red, with the reason in its tooltip. */
+.seat-stats td.cell-down {
+  color: var(--err);
+  font-weight: 700;
+}
+
+/* Tooltips whose text is authored as several lines (a seat's buff/debuff list)
+   keep the line breaks instead of collapsing them into one line. */
+.tip-multiline[data-tip]::after {
+  white-space: pre-line;
+}
+
 .players-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -517,6 +537,18 @@ button.stop {
 
 .transcript-error {
   border-left-color: var(--err);
+}
+
+/* An "alert" narration line (e.g. a scandal) — easy to miss otherwise, so the
+   whole entry is flagged red. */
+.transcript-tone-alert {
+  border-left-color: var(--err);
+  background: rgba(255, 107, 107, 0.12);
+}
+
+.transcript-tone-alert p {
+  color: var(--err);
+  font-weight: 600;
 }
 
 .transcript-meta {

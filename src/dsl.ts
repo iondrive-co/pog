@@ -53,7 +53,7 @@ export interface Decision {
 }
 
 /** A line of narration emitted by `apply`, logged to the match transcript. */
-export type GameEvent = string | { author?: string; text: string };
+export type GameEvent = string | { author?: string; text: string; tone?: string };
 
 /** A rule-based bot's move: the chosen option and the reasoning it logs. */
 export interface BotPick {
@@ -112,11 +112,18 @@ export interface InitContext {
   options: OptionValues;
 }
 
+/**
+ * One cell of a stats/history table. Usually a bare value; a styled cell
+ * carries a `tone` (a CSS-class hint the host renders, e.g. "down" for a value
+ * that just fell) and an optional `tip` shown on hover over that cell.
+ */
+export type TableCell = string | number | { value: string | number; tone?: string; tip?: string };
+
 export interface HistoryTable {
   columns: string[];
   /** Optional hover explanation per column, aligned with `columns`. */
   tips?: (string | undefined)[];
-  rows: (string | number)[][];
+  rows: TableCell[][];
 }
 
 /** Display hooks — how a running match is summarized on screen. */

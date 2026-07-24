@@ -18,7 +18,7 @@
  */
 
 import { parse as parseYAML } from "yaml";
-import type { BotPick, Choice, Decision, GameOption, GameSpec, Outcome, StepResult } from "./dsl.js";
+import type { BotPick, Choice, Decision, GameEvent, GameOption, GameSpec, Outcome, StepResult, TableCell } from "./dsl.js";
 import { STR } from "./strings.js";
 
 // ---------------------------------------------------------------------------
@@ -163,6 +163,13 @@ function evalExpr(e: Expr, env: Env): number {
 
 const PLACEHOLDER = /\{([^{}]+)\}/g;
 
+// Conditional segments: `[[ cond | text ]]` keeps `text` (which may hold its
+// own {…} placeholders) only when `cond` is truthy, and drops the whole
+// segment otherwise — so a term that resolves to zero can vanish entirely
+// rather than render as a "−0" fragment. Resolved before the placeholder pass.
+// `cond` runs no `[` `]` or `|`; `text` runs up to the closing `]]`.
+const SEGMENT = /\[\[([^[\]|]+)\|([^\]]*)\]\]/g;
+
 /**
  * Numbers are floats viewed at one decimal of precision: rendered rounded to
  * 1dp, whole values shown bare ("12", "11.6" — never "12.0").
@@ -177,7 +184,10 @@ function signed(n: number): string {
 }
 
 function render(tpl: string, env: Env): string {
-  return tpl.replace(PLACEHOLDER, (_, raw: string) => {
+  const shown = tpl.replace(SEGMENT, (_, cond: string, text: string) =>
+    truthy(cond.trim(), env) ? text : "",
+  );
+  return shown.replace(PLACEHOLDER, (_, raw: string) => {
     const key = raw.trim();
     if (key.startsWith("+")) return signed(env.formula(key.slice(1).trim()));
     const t = env.text(key);
@@ -209,7 +219,7 @@ interface ChoiceDef {
 
 type Stmt =
   | { kind: "assign"; target: string; op: "=" | "+=" | "-="; expr: Expr }
-  | { kind: "say"; when: WhenClause; template: string; list?: ListSpec }
+  | { kind: "say"; when: WhenClause; template: string; list?: ListSpec; tone?: string }
   | { kind: "when"; when: WhenClause; body: Stmt[] }
   | { kind: "each"; body: Stmt[] };
 
@@ -337,7 +347,18 @@ interface Model {
      * rendering the authored `masked` template (or "?") instead. A `tip`
      * explains the column on hover.
      */
-    seatStats: { label: string; value: string; secret: boolean; masked?: string; map?: string[]; tip?: string }[];
+    seatStats: {
+      label: string;
+      value: string;
+      secret: boolean;
+      masked?: string;
+      map?: string[];
+      tip?: string;
+      /** Condition (per seat) that flags this cell as a decrease — rendered with a "down" tone. */
+      alertWhen?: string;
+      /** Tooltip shown on the flagged cell, explaining the drop. */
+      alertTip?: string;
+    }[];
   };
   vocab: string[];
 }
@@ -814,7 +835,8 @@ function normalize(doc: unknown): Model {
         // A `say` may carry a `list` to fold a per-seat line into one grouped
         // {list}, exactly as an `observation` line does.
         const list = raw.list !== undefined ? parseList(raw.list, where) : undefined;
-        return { kind: "say", when, template: String(raw.say), list };
+        if (raw.tone !== undefined && typeof raw.tone !== "string") return fail(`${where}: "tone" must be text (a style hint, e.g. alert)`);
+        return { kind: "say", when, template: String(raw.say), list, tone: raw.tone as string | undefined };
       }
       // A `when/do` block: statements that run only for seats whose pick this
       // round matches, e.g. `when: { quarter: ship } do: [ "cash += …" ]`.
@@ -1054,6 +1076,14 @@ function normalize(doc: unknown): Model {
       if (raw.tip !== undefined && typeof raw.tip !== "string") {
         return fail(`"view.seats" entry ${i + 1}: "tip" must be text (shown on hover over the column header)`);
       }
+      const alertWhen = raw["alert when"];
+      const alertTip = raw["alert tip"];
+      if (alertWhen !== undefined && typeof alertWhen !== "string") {
+        return fail(`"view.seats" entry ${i + 1}: "alert when" must be a condition, e.g. "confidence < was confidence"`);
+      }
+      if (alertTip !== undefined && typeof alertTip !== "string") {
+        return fail(`"view.seats" entry ${i + 1}: "alert tip" must be a template shown on the flagged cell`);
+      }
       seatStats.push({
         label: raw.label,
         value: raw.value,
@@ -1061,6 +1091,8 @@ function normalize(doc: unknown): Model {
         masked: raw.masked as string | undefined,
         map,
         tip: raw.tip as string | undefined,
+        alertWhen: alertWhen as string | undefined,
+        alertTip: alertTip as string | undefined,
       });
     });
   }
@@ -1201,7 +1233,7 @@ export function compileGame(doc: unknown): GameSpec<GameFileState> {
     const r = round(state);
     const newPicks = { ...state.picks };
     for (const phase of batch) for (const seat of seats) newPicks[`${phase.key}:${seat}`] = picks[`${phase.key}:${seat}`];
-    const events: string[] = [];
+    const events: GameEvent[] = [];
 
     // The resolve block: run statements top-to-bottom over a working copy.
     // `phaseKey` names the axis a statement resolves under (for `tally`,
@@ -1251,7 +1283,7 @@ export function compileGame(doc: unknown): GameSpec<GameFileState> {
             ? env
             : makeEnv(model, workView(), { seat, round: r, picks: newPicks, phase: phaseKey, resolving: true, listString });
         const line = render(stmt.template, sayEnv);
-        if (line.trim()) events.push(line);
+        if (line.trim()) events.push(stmt.tone ? { text: line, tone: stmt.tone } : line);
       }
     };
 
@@ -1428,7 +1460,9 @@ export function compileGame(doc: unknown): GameSpec<GameFileState> {
             return {
               label: render(model.view.headlineLabel ?? "", env),
               value: render(model.view.headlineValue!, env),
-              tip: model.view.headlineTip,
+              // The tip may carry {…} expressions (e.g. a live cost), rendered
+              // against the current state — a seatless, global view.
+              tip: model.view.headlineTip ? render(model.view.headlineTip, env) : undefined,
             };
           }
         : undefined,
@@ -1436,24 +1470,39 @@ export function compileGame(doc: unknown): GameSpec<GameFileState> {
       seatStats: model.view.seatStats.length
         ? (state, reveal = []) => {
             const columns = model.view.seatStats.map((s) => s.label);
-            const tips = model.view.seatStats.map((s) => s.tip);
+            // Column tips may carry {…} expressions (e.g. a scaling factor),
+            // rendered against a seatless global view.
+            const headerEnv = makeEnv(model, viewOf(state), { round: round(state), picks: state.picks });
+            const tips = model.view.seatStats.map((s) => (s.tip ? render(s.tip, headerEnv) : undefined));
             const rows = seats.map((seat) => {
               const env = makeEnv(model, viewOf(state), { seat, round: round(state), picks: state.picks });
-              return model.view.seatStats.map((s): string | number => {
+              return model.view.seatStats.map((s): TableCell => {
                 // A secret stat shows its true value only on `reveal`ed rows
                 // (the players watching this screen); every other row renders
                 // the authored `masked` template — "?" when none is given.
                 const hidden = s.secret && !reveal.includes(seat);
-                if (hidden && s.masked === undefined) return STR.engine.defaultMaskedSecret;
-                const out = render(hidden ? s.masked! : s.value, env);
-                if (s.map && /^-?\d+$/.test(out)) {
-                  // In range the map supplies the label; out of range the
-                  // number stands as-is, so a map can caption a few special
-                  // values (e.g. 0 → "?") without swallowing the rest.
-                  const n = Number(out);
-                  return n >= 0 && n < s.map.length ? s.map[n] : n;
+                let value: string | number;
+                if (hidden && s.masked === undefined) {
+                  value = STR.engine.defaultMaskedSecret;
+                } else {
+                  const out = render(hidden ? s.masked! : s.value, env);
+                  if (s.map && /^-?\d+$/.test(out)) {
+                    // In range the map supplies the label; out of range the
+                    // number stands as-is, so a map can caption a few special
+                    // values (e.g. 0 → "?") without swallowing the rest.
+                    const n = Number(out);
+                    value = n >= 0 && n < s.map.length ? s.map[n] : n;
+                  } else {
+                    value = /^-?\d+$/.test(out) ? Number(out) : out;
+                  }
                 }
-                return /^-?\d+$/.test(out) ? Number(out) : out;
+                // A cell flagged by `alert when` (only on the seat's own visible
+                // stat, never a masked rival cell) renders with a "down" tone
+                // and an explanatory tip.
+                if (!hidden && s.alertWhen && truthy(s.alertWhen, env)) {
+                  return { value, tone: "down", tip: s.alertTip ? render(s.alertTip, env) : undefined };
+                }
+                return value;
               });
             });
             return { columns, tips, rows };

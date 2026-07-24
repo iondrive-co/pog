@@ -16,7 +16,10 @@ export function Transcript({ entries }: { entries: TranscriptEntry[] }) {
       <div className="transcript-scroll">
         {entries.length === 0 && <p className="muted small">{S.emptyPlaceholder}</p>}
         {entries.map((e, i) => (
-          <div key={i} className={`transcript-entry transcript-${e.kind}`}>
+          <div
+            key={i}
+            className={`transcript-entry transcript-${e.kind}${e.tone ? ` transcript-tone-${e.tone}` : ""}`}
+          >
             <span className="transcript-meta">
               {e.tag ? `${e.tag}${S.metaSeparator}` : ""}
               {e.author}

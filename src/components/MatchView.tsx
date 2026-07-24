@@ -255,13 +255,22 @@ export function MatchView<S>(props: MatchViewProps<S>) {
             <tbody>
               {seats.map((s, i) => (
                 <tr key={i}>
-                  <td className="score-name">
+                  {/* Hovering a lab's name shows its strengths and weaknesses
+                      (the authored seat description), if any. */}
+                  <td className="score-name seat-name tip-multiline" data-tip={spec.seats.descriptions?.[i]}>
                     {s.name} {s.kind === "human" ? STR.setupPanel.badgeHuman : STR.setupPanel.badgeBot}
                     {spec.seats.roleNames?.[i] ? fmt(S.seatRoleSuffix, { role: spec.seats.roleNames[i] }) : ""}
                   </td>
-                  {seatStats.rows[i].map((v, j) => (
-                    <td key={j}>{v}</td>
-                  ))}
+                  {seatStats.rows[i].map((v, j) => {
+                    // A styled cell (e.g. a value that just fell) carries a tone
+                    // class and a hover tip; a plain value renders bare.
+                    const cell = typeof v === "object" && v !== null ? v : { value: v, tone: undefined, tip: undefined };
+                    return (
+                      <td key={j} className={cell.tone ? `cell-${cell.tone}` : undefined} data-tip={cell.tip}>
+                        {cell.value}
+                      </td>
+                    );
+                  })}
                 </tr>
               ))}
             </tbody>
@@ -406,7 +415,7 @@ export function MatchView<S>(props: MatchViewProps<S>) {
               {table.rows.map((row, i) => (
                 <tr key={i}>
                   {row.map((cell, j) => (
-                    <td key={j}>{cell}</td>
+                    <td key={j}>{typeof cell === "object" && cell !== null ? cell.value : cell}</td>
                   ))}
                 </tr>
               ))}

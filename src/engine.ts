@@ -16,6 +16,11 @@ export interface TranscriptEntry {
   kind: "reasoning" | "info" | "error";
   /** Short turn label from the spec's `view.turnTag`, e.g. "R3". */
   tag?: string;
+  /**
+   * Optional style hint carried from a narration `say`'s `tone` (e.g. "alert"
+   * for a scandal), so the host can colour that line. Purely cosmetic.
+   */
+  tone?: string;
 }
 
 /** Everything an agent is shown for one decision. */
@@ -125,6 +130,9 @@ export class Match<S> {
     const tag = this.spec.view.turnTag?.(this.state);
     const entries: TranscriptEntry[] = [];
     const resolved: Record<string, string> = {};
+    // Agent reasoning/errors, collected per decision then folded into one entry
+    // per seat below (a seat may decide several axes in one batch).
+    const agentLines: { seat: number; text: string; kind: "reasoning" | "error" }[] = [];
 
     for (const d of pending) {
       // A disabled option is unavailable this turn: hide it from agents, reject
@@ -163,11 +171,10 @@ export class Match<S> {
         // random legal choice and put the cause in the transcript, so the
         // match plays on with the failure visible instead of dying mid-step.
         resolved[d.key] = randomLegal();
-        entries.push({
-          author: this.seatNames[d.seat],
+        agentLines.push({
+          seat: d.seat,
           text: fmt(STR.engine.agentFailed, { error: err instanceof Error ? err.message : String(err) }),
           kind: "error",
-          tag,
         });
         continue;
       }
@@ -176,19 +183,33 @@ export class Match<S> {
       const legal = legalChoices.some((c) => c.id === reply.choiceId);
       const choiceId = legal ? reply.choiceId : randomLegal();
       resolved[d.key] = choiceId;
-      entries.push({
-        author: this.seatNames[d.seat],
+      agentLines.push({
+        seat: d.seat,
         text: legal ? reply.reasoning : fmt(STR.engine.agentIllegalChoice, { choice: reply.choiceId }),
         kind: legal && !reply.parseFailed ? "reasoning" : "error",
-        tag,
       });
+    }
+
+    // Fold each seat's per-axis reasoning into a single transcript entry — one
+    // line per seat per batch, not one per axis (e.g. a lab move AND a public
+    // posture read as one) — in the order seats first decided in the batch.
+    const bySeat = new Map<number, { texts: string[]; kind: "reasoning" | "error" }>();
+    for (const line of agentLines) {
+      const acc = bySeat.get(line.seat) ?? { texts: [], kind: "reasoning" as "reasoning" | "error" };
+      if (line.text) acc.texts.push(line.text);
+      if (line.kind === "error") acc.kind = "error";
+      bySeat.set(line.seat, acc);
+    }
+    for (const [seat, acc] of bySeat) {
+      entries.push({ author: this.seatNames[seat], text: acc.texts.join(" "), kind: acc.kind, tag });
     }
 
     const result = this.spec.apply(this.state, resolved);
     this.state = result.state;
     for (const ev of result.events ?? []) {
       const { author = STR.engine.narrationAuthor, text } = typeof ev === "string" ? { text: ev } : ev;
-      entries.push({ author, text, kind: "info", tag });
+      const tone = typeof ev === "string" ? undefined : ev.tone;
+      entries.push({ author, text, kind: "info", tag, tone });
     }
     return entries;
   }
